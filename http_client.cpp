@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 // #include <string.h>
-#include <filesystem>
+// #include <filesystem>
 #include <vector>
 
 // namespace fs = std::filesystem; 
@@ -45,9 +45,6 @@ class SimpleReadline
         void loadHistoryFromFile(const std::string &filePath);
         void appendHistoryToFile(const std::string &line, const std::string &filePath);
 };
-
-
-
 
 std::vector<std::string> history;
 struct termios orig_termios;
@@ -356,15 +353,18 @@ void SimpleReadline::appendHistoryToFile(const string &line, const string &fileP
     }
 }
 
-
+enum
+{
+    BUFFER_SIZE = 10240
+};
 
 int main()
 {
     const char *__server_ip_address__("192.168.17.228");
-    long __sock__(0);
-    uint16_t __port__(8001);
-    struct sockaddr_in __server_sock__;
-    char buffer[10000] = {0};
+    long __socket(0);
+    uint16_t __port(8001);
+    struct sockaddr_in __server;
+    char buffer[BUFFER_SIZE];
     const char *__prompt(" --> : ");
     string __msg_str__("");
     SimpleReadline srl;
@@ -373,59 +373,59 @@ int main()
     {
         // init socket
 
-            if((__sock__ = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+            if((__socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
             {
                 perror("socket: ");
-                close(__sock__);
+                close(__socket);
                 exit(EXIT_FAILURE);
             }
 
-            __server_sock__.sin_family = AF_INET;
-            __server_sock__.sin_port = htons(__port__);
+            __server.sin_family = AF_INET;
+            __server.sin_port = htons(__port);
 
-            if(inet_pton(AF_INET, __server_ip_address__, &__server_sock__.sin_addr) < 0)
+            if(inet_pton(AF_INET, __server_ip_address__, &__server.sin_addr) < 0)
             {
                 perror("inet_pton: ");
-                close(__sock__);
+                close(__socket);
                 exit(EXIT_FAILURE);
             }
 
-            if(connect(__sock__, (struct sockaddr *)&__server_sock__, sizeof(__server_sock__)) < 0)
+            if(connect(__socket, (struct sockaddr *)&__server, sizeof(__server)) < 0)
             {
                 perror("connect: ");
-                close(__sock__);
+                close(__socket);
                 exit(EXIT_FAILURE);
             }
 
         __msg_str__ = srl.readLine();
         __msg_str__ += '\0';
 
-        if(send(__sock__, __msg_str__.c_str(), __msg_str__.length(), 0) < 0)
+        if(send(__socket, __msg_str__.c_str(), __msg_str__.length(), 0) < 0)
         {
             perror("send: ");
-            close(__sock__);
+            close(__socket);
             exit(EXIT_FAILURE);
         }
 
         // look if server responds
 
-            char __buf__[10000];
-            for(int i = 0; i < 10000; ++i)
+            char __response_buffer[BUFFER_SIZE];
+            for(int i = 0; i < BUFFER_SIZE; ++i)
             {
-                __buf__[i] = '\0';
+                __response_buffer[i] = '\0';
             }
 
-            while(read(__sock__, &__buf__, 10000) > 0);
-            if(__buf__[0] != '\0')
+            while(read(__socket, &__response_buffer, BUFFER_SIZE) > 0);
+            if(__response_buffer[0] != '\0')
             {
-                cout << (__buf__);
-                for(int i = 0; i < 10000; ++i)
+                cout << (__response_buffer);
+                for(int i = 0; i < BUFFER_SIZE; ++i)
                 {
-                    __buf__[i] = '\0';
+                    __response_buffer[i] = '\0';
                 }
             }
     }
 
-    close(__sock__);
+    close(__socket);
     return 0;
 }
