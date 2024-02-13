@@ -50,7 +50,7 @@ namespace
 {
     namespace tools
     {
-        string _time()
+        string __time__()
         {
             long now(time({}));
             char buf[80];
@@ -62,12 +62,12 @@ namespace
             );
 
             string result(buf);
-            return "\033[32m[\033[35m" + result + "\033[32m]\033[0m - ";
+            return "\033[32m[\033[35m" + result + "\033[32m]\033[0m";
         }
 
         void _fatal_error(const string &__msg)
         {
-            string err_msg(_time() + " - \033[31mERROR\033[0m: " + __msg);
+            string err_msg(__time__() + " - \033[31mERROR\033[0m: " + __msg);
             perror(err_msg.c_str());
             exit(EXIT_FAILURE);
         }
@@ -266,8 +266,8 @@ int main()
             exit(EXIT_FAILURE);
         }
 
-        console->out('\n', _time(), " - \033[92mSuccessfully Created Socket\033[0m.\n");
-        console->out(_time(), " - \033[92mServer is listening on: \033[0m", inet_ntoa(__address.sin_addr), ":\033[94m", PORT, "\033[0m\n");
+        console->out('\n', __time__(), " - \033[92mSuccessfully Created Socket\033[0m.\n");
+        console->out(__time__(), " - \033[92mServer is listening on: \033[0m", inet_ntoa(__address.sin_addr), ":\033[94m", PORT, "\033[0m\n");
 
     while(true)
     {
@@ -277,17 +277,17 @@ int main()
             _fatal_error("Accept failed.");
         }
 
-        long long valread = read(__sock[1], __buffer, sizeof(__buffer));
+        int32_t valread = read(__sock[1], __buffer, sizeof(__buffer));
         if(valread < 0)
         {
-            perror(string(_time() + "read: ").c_str());
+            perror(string(__time__() + "read: ").c_str());
         }
         
         vector<string> __str_vec;    
         string __data(__buffer);
         int start(0);
 
-        for(int i = 0; i < __data.length(); ++i)
+        for(uint16_t i = 0; i < __data.length(); ++i)
         {
             if(__data[i] == ' ')
             {
@@ -303,8 +303,18 @@ int main()
             }
         }
 
-        for(int i = 0; i < __str_vec.size(); ++i)
-        {   // look for commands.
+        // look for commands.
+        for(uint16_t i = 0; i < __str_vec.size(); ++i)
+        {
+            if(__str_vec[i] == "_DIR:")
+            {
+                string __msg__(getenv("PWD"));
+                if(send(__sock[1], __msg__.c_str(), __msg__.length() - 1, 0) < 0)
+                {
+                    perror(string(__time__() + "send: ").c_str());
+                }
+            }
+
             if(__str_vec[i] == "SIGTERM")
             {
                 console->out("Recived: 'SIGTERM', shuting down now.\n");
@@ -315,10 +325,10 @@ int main()
 
             if(__str_vec[i] == "server_time")
             {
-                string __msg__("Current server time -> " + _time());
+                string __msg__("Current server time -> " + __time__());
                 if(send(__sock[1], __msg__.c_str(), __msg__.length(), 0) < 0)
                 {
-                    perror(string(_time() + "send: ").c_str());
+                    perror(string(__time__() + "send: ").c_str());
                 }
             }
 
@@ -357,7 +367,7 @@ int main()
                     string __output__ = c_ls(__str_vec[i + 1]);
                     if(send(__sock[1], __output__.c_str(), __output__.length(), 0) < 0)
                     {
-                        perror(string(_time() + "send: ").c_str());
+                        perror(string(__time__() + "send: ").c_str());
                     }
                 }
             }
@@ -415,12 +425,10 @@ int main()
                     // waitpid(childPid, &status, 0);               
                 }
             }
-
-            cout << __str_vec[i] << '\n';
         }
 
         __buffer[valread] = '\0'; /* Ensure null-termination -->> (buffer[LAST ELEMENT] = '\0') */
-        console->out(_time(), " - Received: ", __data, '\n');
+        console->out(__time__(), __data, '\n');
         close(__sock[1]);
     }
 
